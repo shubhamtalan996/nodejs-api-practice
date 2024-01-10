@@ -1,0 +1,11 @@
+{
+  "name": "nodejs-api-practice",
+  "version": "1.0.0",
+  "description": "Practicing rest API with node and express",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Shubham Talan",
+  "license": "ISC"
+}
