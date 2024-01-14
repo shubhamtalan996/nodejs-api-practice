@@ -24,6 +24,10 @@ exports.createPost = (req, res, next) => {
       id: new Date().toISOString(),
       title,
       content,
+      creator: {
+        name: "Shubham",
+      },
+      createdAt: new Date(),
     },
   });
 };
