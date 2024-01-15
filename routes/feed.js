@@ -20,4 +20,15 @@ router.post(
   feedController.createPost
 );
 
+router.put(
+  "/post/:postId",
+  [
+    body("title", "Please enter a valid Title!").trim().isLength({ min: 5 }),
+    body("content", "Please enter a valid description.")
+      .trim()
+      .isLength({ min: 8, max: 400 }),
+  ],
+  feedController.editPost
+);
+
 module.exports = router;
