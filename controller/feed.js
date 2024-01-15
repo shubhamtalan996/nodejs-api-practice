@@ -39,19 +39,25 @@ exports.getPost = (req, res, next) => {
 };
 
 exports.createPost = (req, res, next) => {
-  const title = req.body.title;
-  const content = req.body.content;
   const errors = validationResult(req);
-
   if (!errors.isEmpty()) {
     const err = new Error("Validation failed, entered data is incorrect!");
     err.statusCode = 422;
     throw err;
   }
+
+  if (!req.file) {
+    const err = new Error("No image provided!");
+    err.statusCode = 422;
+    throw err;
+  }
+  const title = req.body.title;
+  const content = req.body.content;
+  const imageUrl = req.file.path;
   const post = new Post({
     title,
     content,
-    imageUrl: "/images/bb8.jpeg",
+    imageUrl,
     creator: {
       name: "shubham",
     },
