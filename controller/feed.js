@@ -3,17 +3,29 @@ const Post = require("../models/post");
 const fileHelper = require("../utils/file");
 
 exports.getPosts = (req, res, next) => {
+  const currentPage = req.query.page || 1;
+  const perPage = 2;
+  let totalItems;
+
   Post.find()
-    .then((posts) => {
+    .countDocuments()
+    .then((count) => {
+      totalItems = count;
+      return Post.find()
+        .skip((currentPage - 1) * perPage)
+        .limit(perPage);
+    })
+    .then((paginatedRecords) => {
       res.status(200).json({
-        posts: posts,
+        message: "Fetched posts successfully",
+        posts: paginatedRecords,
+        totalItems,
       });
     })
     .catch((err) => {
       if (!err?.statusCode) {
         err.statusCode = 500;
       }
-      return next(err);
     });
 };
 
@@ -128,5 +140,28 @@ exports.editPost = (req, res, next) => {
         err.statusCode = 500;
       }
       next(err);
+    });
+};
+
+exports.deletePost = (req, res, next) => {
+  const postId = req.params.postId;
+
+  Post.findById(postId)
+    .then((post) => {
+      if (!post) {
+        const err = new Error("Post not found!");
+        err.statusCode = 404;
+        throw err;
+      }
+      // fileHelper.deletefile(post.imageUrl);
+
+      return Post.deleteOne({ _id: postId });
+    })
+    .then((result) => {
+      console.log({ result });
+      res.status(200).json({ message: "Success!" });
+    })
+    .catch((err) => {
+      res.status(500).json({ message: "Deleting post failed!" });
     });
 };
