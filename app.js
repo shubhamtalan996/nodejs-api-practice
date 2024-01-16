@@ -5,6 +5,7 @@ const feedRoutes = require("./routes/feed");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const multer = require("multer");
+const authRoutes = require("./routes/auth");
 
 const app = express();
 
@@ -40,6 +41,7 @@ app.use(bodyParser.json());
 app.use(multer({ storage: fileStorage, fileFilter }).single("image"));
 
 app.use("/feed", feedRoutes);
+app.use("/auth", authRoutes);
 
 app.use("/images", express.static(path.join(__dirname, "images")));
 
