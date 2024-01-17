@@ -5,7 +5,6 @@ const jwt = require("jsonwebtoken");
 
 exports.signUp = (req, res, next) => {
   const errors = validationResult(req);
-  console.log(errors.array());
   if (!errors.isEmpty()) {
     const err = new Error("Validation failed, entered data is incorrect!");
     err.statusCode = 422;
@@ -41,7 +40,6 @@ exports.signUp = (req, res, next) => {
 
 exports.login = (req, res, next) => {
   const errors = validationResult(req);
-  console.log(errors.array());
   if (!errors.isEmpty()) {
     const err = new Error("Validation failed, entered data is incorrect!");
     err.statusCode = 422;
@@ -77,6 +75,52 @@ exports.login = (req, res, next) => {
       );
 
       res.status(200).json({ token, userId: loadedUser._id.toString() });
+    })
+    .catch((err) => {
+      if (!err?.statusCode) {
+        err.statusCode = 500;
+      }
+      return next(err);
+    });
+};
+
+exports.getUserStatus = (req, res, next) => {
+  User.findById(req.userId)
+    .then((user) => {
+      if (!user) {
+        const err = new Error("User not found!");
+        err.statusCode = 404;
+        throw err;
+      }
+      res.status(200).json({
+        status: user.status,
+      });
+    })
+    .catch((err) => {
+      if (!err?.statusCode) {
+        err.statusCode = 500;
+      }
+      return next(err);
+    });
+};
+
+exports.setUserStatus = (req, res, next) => {
+  const status = req.body.status;
+  User.findById(req.userId)
+    .then((user) => {
+      if (!user) {
+        const err = new Error("User not found!");
+        err.statusCode = 404;
+        throw err;
+      }
+      user.status = status;
+      return user.save();
+    })
+    .then((result) => {
+      res.status(200).json({
+        message: "Status update successful",
+        status: status,
+      });
     })
     .catch((err) => {
       if (!err?.statusCode) {
