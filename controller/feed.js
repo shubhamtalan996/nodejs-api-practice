@@ -3,57 +3,50 @@ const Post = require("../models/post");
 const fileHelper = require("../utils/file");
 const User = require("../models/user");
 
-exports.getPosts = (req, res, next) => {
+exports.getPosts = async (req, res, next) => {
   const currentPage = req.query.page || 1;
   const perPage = 2;
-  let totalItems;
+  try {
+    const totalItems = await Post.find().countDocuments();
+    const paginatedRecords = await Post.find()
+      .skip((currentPage - 1) * perPage)
+      .limit(perPage);
 
-  Post.find()
-    .countDocuments()
-    .then((count) => {
-      totalItems = count;
-      return Post.find()
-        .skip((currentPage - 1) * perPage)
-        .limit(perPage);
-    })
-    .then((paginatedRecords) => {
-      res.status(200).json({
-        message: "Fetched posts successfully",
-        posts: paginatedRecords,
-        totalItems,
-      });
-    })
-    .catch((err) => {
-      if (!err?.statusCode) {
-        err.statusCode = 500;
-      }
-      next(err);
+    res.status(200).json({
+      message: "Fetched posts successfully",
+      posts: paginatedRecords,
+      totalItems,
     });
+  } catch (err) {
+    if (!err?.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
 };
 
-exports.getPost = (req, res, next) => {
+exports.getPost = async (req, res, next) => {
   const postId = req.params.postId;
 
-  Post.findById(postId)
-    .then((record) => {
-      if (!record) {
-        const err = new Error("Post not found!");
-        err.statusCode = 404;
-        throw err;
-      }
-      res.status(200).json({
-        post: record,
-      });
-    })
-    .catch((err) => {
-      if (!err?.statusCode) {
-        err.statusCode = 500;
-      }
-      next(err);
+  try {
+    const posts = await Post.findById(postId);
+    if (!posts) {
+      const err = new Error("Post not found!");
+      err.statusCode = 404;
+      throw err;
+    }
+    res.status(200).json({
+      post: posts,
     });
+  } catch (err) {
+    if (!err?.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
 };
 
-exports.createPost = (req, res, next) => {
+exports.createPost = async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     const err = new Error("Validation failed, entered data is incorrect!");
@@ -69,39 +62,34 @@ exports.createPost = (req, res, next) => {
   const title = req.body.title;
   const content = req.body.content;
   const imageUrl = req.file.path;
-  let creator;
-  const post = new Post({
-    title,
-    content,
-    imageUrl,
-    creator: req.userId,
-  });
 
-  post
-    .save()
-    .then((result) => {
-      console.log("Post Created!");
-      return User.findById(req.userId);
-    })
-    .then((user) => {
-      creator = user;
-      user.posts.push(post);
-      return user.save();
-    })
-    .then((result) => {
-      res.status(201).json({
-        message: "Post created successfully!",
-        post,
-        creator: { _id: creator._id, name: creator.name },
-      });
-    })
-    .catch((err) => {
-      console.log("Error occurred while creating the post!", err);
-      if (!err?.statusCode) {
-        err.statusCode = 500;
-      }
-      next(err);
+  try {
+    const post = new Post({
+      title,
+      content,
+      imageUrl,
+      creator: req.userId,
     });
+
+    const postSaveResponse = await post.save();
+    if (postSaveResponse) {
+      console.log("Post Created!");
+    }
+    const user = await User.findById(req.userId);
+    user.posts.push(post);
+    await user.save();
+    res.status(201).json({
+      message: "Post created successfully!",
+      post,
+      creator: { _id: user._id, name: user.name },
+    });
+  } catch (err) {
+    console.log("Error occurred while creating the post!", err);
+    if (!err?.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
 };
 
 exports.editPost = (req, res, next) => {
