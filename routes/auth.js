@@ -37,7 +37,7 @@ router.post(
 
 router.get("/status", isAuth, authController.getUserStatus);
 
-router.patch(
+router.put(
   "/status",
   isAuth,
   [body("status").trim().not().isEmpty()],

@@ -32,7 +32,10 @@ const fileFilter = (req, file, cb) => {
 
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATH, DELETE");
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, PATCH, DELETE"
+  );
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
   next();
 });
@@ -57,7 +60,12 @@ app.use((error, req, res, next) => {
 mongoose
   .connect(process.env.MONGO_CONNECTION_URL)
   .then(() => {
-    app.listen(8080);
+    const server = app.listen(8080);
+    console.log("appp>>>>>>>>>>>>>>>");
+    const io = require("./socket").init(server);
+    io.on("connection", (socket) => {
+      console.log("Client connect");
+    });
   })
   .catch((err) => {
     console.log("Error conencting with database>>", err);
