@@ -1,11 +1,12 @@
 require("dotenv").config();
 const path = require("path");
 const express = require("express");
-const feedRoutes = require("./routes/feed");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const multer = require("multer");
-const authRoutes = require("./routes/auth");
+const { graphqlHTTP } = require("express-graphql");
+const { Schema } = require("./graphql/schema");
+const graphqlResolver = require("./graphql/resolvers");
 
 const app = express();
 
@@ -40,11 +41,18 @@ app.use((req, res, next) => {
   next();
 });
 
+console.log(graphqlResolver);
+
+app.use(
+  "/graphql",
+  graphqlHTTP({
+    schema: Schema,
+    rootValue: graphqlResolver,
+  })
+);
+
 app.use(bodyParser.json());
 app.use(multer({ storage: fileStorage, fileFilter }).single("image"));
-
-app.use("/feed", feedRoutes);
-app.use("/auth", authRoutes);
 
 app.use("/images", express.static(path.join(__dirname, "images")));
 
@@ -60,12 +68,7 @@ app.use((error, req, res, next) => {
 mongoose
   .connect(process.env.MONGO_CONNECTION_URL)
   .then(() => {
-    const server = app.listen(8080);
-    console.log("appp>>>>>>>>>>>>>>>");
-    const io = require("./socket").init(server);
-    io.on("connection", (socket) => {
-      console.log("Client connect");
-    });
+    app.listen(8080);
   })
   .catch((err) => {
     console.log("Error conencting with database>>", err);
