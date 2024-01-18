@@ -41,13 +41,12 @@ app.use((req, res, next) => {
   next();
 });
 
-console.log(graphqlResolver);
-
 app.use(
   "/graphql",
   graphqlHTTP({
     schema: Schema,
     rootValue: graphqlResolver,
+    graphiql: true,
   })
 );
 
