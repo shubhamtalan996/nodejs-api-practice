@@ -7,6 +7,8 @@ const multer = require("multer");
 const { graphqlHTTP } = require("express-graphql");
 const { Schema } = require("./graphql/schema");
 const graphqlResolver = require("./graphql/resolvers");
+const auth = require("./middleware/auth");
+const utils = require("./utils/file");
 
 const app = express();
 
@@ -44,13 +46,32 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use(auth);
+
+app.put("/post-image", (req, res, next) => {
+  if (!req.isAuth) {
+    const error = new Error("Not authenticated!");
+    error.code = 401;
+    throw error;
+  }
+  if (!req.file) {
+    return res.status(200).json({ message: "No file provided!" });
+  }
+  if (req.body.oldPath) {
+    utils.clearImage(req.body.oldPath);
+  }
+  return res
+    .status(201)
+    .json({ message: "File Stored!", filePath: req.file.path });
+});
+
 app.use(
   "/graphql",
   graphqlHTTP({
     schema: Schema,
     rootValue: graphqlResolver,
     graphiql: true,
-    formatError(err) {
+    customFormatErrorFn(err) {
       if (!err.originalError) {
         return err;
       }

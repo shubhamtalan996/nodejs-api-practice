@@ -13,3 +13,8 @@ exports.deletefile = (fileName) => {
     });
   }
 };
+
+exports.clearImage = (filePath) => {
+  filePath = path.join(_dirname, "..", filePath);
+  fs.unlink(filePath, (err) => console.log(err));
+};

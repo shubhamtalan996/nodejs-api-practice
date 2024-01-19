@@ -1,4 +1,5 @@
 const User = require("../models/user");
+const Post = require("../models/post");
 const bcrypt = require("bcryptjs");
 const validator = require("validator");
 const jwt = require("jsonwebtoken");
@@ -81,5 +82,96 @@ module.exports = {
       token,
       userId: user._id.toString(),
     };
+  },
+
+  getPosts: async function ({ currentPage }, req) {
+    if (!req.isAuth) {
+      const error = new Error("Not authenticated!");
+      error.code = 401;
+      throw error;
+    }
+    const pageNo = Number(currentPage) || 1;
+    const perPage = 2;
+    try {
+      const totalItems = await Post.find().countDocuments();
+      const paginatedRecords = await Post.find()
+        .populate("creator")
+        .sort({ createdAt: -1 })
+        .skip((pageNo - 1) * perPage)
+        .limit(perPage);
+
+      console.log({ totalItems, paginatedRecords });
+
+      return {
+        posts: paginatedRecords.map((rec) => ({
+          ...rec._doc,
+          _id: rec._id.toString(),
+          createdAt: rec.createdAt.toISOString(),
+          updatedAt: rec.updatedAt.toISOString(),
+        })),
+        totalItems,
+      };
+    } catch (err) {
+      err.statusCode = 500;
+      throw err;
+    }
+  },
+
+  createPost: async function ({ postInput }, req) {
+    if (!req.isAuth) {
+      const error = new Error("Not authenticated!");
+      error.code = 401;
+      throw error;
+    }
+    const { title, content, imageUrl } = postInput;
+    const errors = [];
+    if (validator.isEmpty(title) || !validator.isLength(title, { min: 4 })) {
+      errors.push({ message: "Title validation failed!" });
+    }
+    if (
+      validator.isEmpty(content) ||
+      !validator.isLength(content, { min: 5 })
+    ) {
+      errors.push({ message: "content validation failed!" });
+    }
+    // if (!req.file) {
+    //   errors.push({ message: "No image provided!" });
+    // }
+    if (errors.length > 0) {
+      const error = new Error("Invalid input");
+      error.data = errors;
+      error.code = 422;
+      throw error;
+    }
+    try {
+      const user = await User.findById(req.userId);
+      if (!user) {
+        const error = new Error("User not found!");
+        error.code = 404;
+        throw error;
+      }
+      const post = new Post({
+        title,
+        content,
+        imageUrl: "image",
+        creator: user,
+      });
+      const postSaveResponse = await post.save();
+      if (postSaveResponse) {
+        console.log("Post Created!");
+      }
+
+      user.posts.push(post);
+      await user.save();
+
+      return {
+        ...postSaveResponse._doc,
+        _id: postSaveResponse._id.toString(),
+        createdAt: postSaveResponse.createdAt.toISOString(),
+        updatedAt: postSaveResponse.updatedAt.toISOString(),
+      };
+    } catch (error) {
+      throw error;
+    }
   },
 };

@@ -23,16 +23,25 @@ exports.Schema = buildSchema(`
         email: String!
         password: String!
     }
+    input PostInputData {
+        title: String!
+        content: String!
+    }
+    type GetPostResponse {
+        posts: [Post!]!
+        totalItems: Int!
+    } 
     type AuthData {
         token: String!
         userId: String!
     }
     type RootMutation {
         createUser(userInput: UserInputData): User!
-        
+        createPost(postInput: PostInputData): Post!
     }
     type RootQuery {
         loginUser(email: String!, password: String!): AuthData!
+        getPosts(currentPage: String!): GetPostResponse!
     }
     schema {
         query: RootQuery
