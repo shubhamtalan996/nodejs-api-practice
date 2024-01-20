@@ -48,6 +48,11 @@ app.use((req, res, next) => {
 
 app.use(auth);
 
+app.use(bodyParser.json());
+app.use(multer({ storage: fileStorage, fileFilter }).single("image"));
+
+app.use("/images", express.static(path.join(__dirname, "images")));
+
 app.put("/post-image", (req, res, next) => {
   if (!req.isAuth) {
     const error = new Error("Not authenticated!");
@@ -86,11 +91,6 @@ app.use(
     },
   })
 );
-
-app.use(bodyParser.json());
-app.use(multer({ storage: fileStorage, fileFilter }).single("image"));
-
-app.use("/images", express.static(path.join(__dirname, "images")));
 
 app.use((error, req, res, next) => {
   console.log(error);
