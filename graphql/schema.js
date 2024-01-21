@@ -39,7 +39,8 @@ exports.Schema = buildSchema(`
     type RootMutation {
         createUser(userInput: UserInputData): User!
         createPost(postInput: PostInputData): Post!
-        updatePost(id: ID!, postInput: PostInputData): Post!
+        updatePost(id: ID!, postInput: PostInputData): Post
+        deletePost(id: ID!): Boolean!
     }
     type RootQuery {
         loginUser(email: String!, password: String!): AuthData!

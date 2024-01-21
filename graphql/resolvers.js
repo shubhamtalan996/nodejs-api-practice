@@ -3,6 +3,7 @@ const Post = require("../models/post");
 const bcrypt = require("bcryptjs");
 const validator = require("validator");
 const jwt = require("jsonwebtoken");
+const utils = require("../utils/file");
 
 module.exports = {
   createUser: async function ({ userInput }, req) {
@@ -204,34 +205,89 @@ module.exports = {
       throw error;
     }
   },
-  // updatePost: async function ({ id, postInput }, req) {
-  //   if (!req.isAuth) {
-  //     const error = new Error("Not authenticated!");
-  //     error.code = 401;
-  //     throw error;
-  //   }
-  //   const { title, content, imageUrl } = postInput;
-  //   const errors = [];
-  //   if (validator.isEmpty(title) || !validator.isLength(title, { min: 4 })) {
-  //     errors.push({ message: "Title validation failed!" });
-  //   }
-  //   if (
-  //     validator.isEmpty(content) ||
-  //     !validator.isLength(content, { min: 5 })
-  //   ) {
-  //     errors.push({ message: "content validation failed!" });
-  //   }
-  //   if (errors.length > 0) {
-  //     const error = new Error("Invalid input");
-  //     error.data = errors;
-  //     error.code = 422;
-  //     throw error;
-  //   }
-  //   try {
-  //     const post = await Post.findById(id).populate('creator');
+  updatePost: async function ({ id, postInput }, req) {
+    if (!req.isAuth) {
+      const error = new Error("Not authenticated!");
+      error.code = 401;
+      throw error;
+    }
+    const { title, content, imageUrl } = postInput;
 
-  //   } catch (error) {
+    try {
+      const post = await Post.findById(id).populate("creator");
+      if (!post) {
+        const error = new Error("Post not found!");
+        error.code = 404;
+        throw error;
+      }
+      if (post.creator._id.toString() !== req.userId.toString()) {
+        const error = new Error("User not authorized to edit post!");
+        error.code = 403;
+        throw error;
+      }
+      const errors = [];
+      if (validator.isEmpty(title) || !validator.isLength(title, { min: 4 })) {
+        errors.push({ message: "Title validation failed!" });
+      }
+      if (
+        validator.isEmpty(content) ||
+        !validator.isLength(content, { min: 5 })
+      ) {
+        errors.push({ message: "content validation failed!" });
+      }
+      if (errors.length > 0) {
+        const error = new Error("Invalid input");
+        error.data = errors;
+        error.code = 422;
+        throw error;
+      }
 
-  //   }
-  // },
+      post.title = title;
+      post.content = content;
+      if (imageUrl !== "undefined" && imageUrl !== post.imageUrl) {
+        utils.clearImage(post.imageUrl);
+        post.imageUrl = imageUrl;
+      }
+      const updatedPost = await post.save();
+      return {
+        ...updatedPost._doc,
+        _id: updatedPost._id.toString(),
+        createdAt: updatedPost.createdAt.toISOString(),
+        updatedAt: updatedPost.updatedAt.toISOString(),
+      };
+    } catch (error) {
+      throw error;
+    }
+  },
+  deletePost: async function ({ id }, req) {
+    if (!req.isAuth) {
+      const error = new Error("Not authenticated!");
+      error.code = 401;
+      throw error;
+    }
+    try {
+      const post = await Post.findById(id).populate("creator");
+      if (!post) {
+        const error = new Error("Post not found!");
+        error.code = 404;
+        throw error;
+      }
+      if (post.creator._id.toString() !== req.userId.toString()) {
+        const error = new Error("User not authorized to edit post!");
+        error.code = 403;
+        throw error;
+      }
+      utils.clearImage(post.imageUrl);
+      await Post.deleteOne({ _id: id });
+
+      const user = await User.findById(req.userId);
+      user.posts.pull(id);
+      await user.save();
+
+      return true;
+    } catch (error) {
+      return false;
+      throw error;
+    }
+  },
 };
