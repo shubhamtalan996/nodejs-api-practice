@@ -101,8 +101,6 @@ module.exports = {
         .skip((pageNo - 1) * perPage)
         .limit(perPage);
 
-      console.log({ totalItems, paginatedRecords });
-
       return {
         posts: paginatedRecords.map((rec) => ({
           ...rec._doc,
@@ -244,11 +242,12 @@ module.exports = {
 
       post.title = title;
       post.content = content;
-      if (imageUrl !== "undefined" && imageUrl !== post.imageUrl) {
+      if (imageUrl && imageUrl !== "undefined" && imageUrl !== post.imageUrl) {
         utils.clearImage(post.imageUrl);
         post.imageUrl = imageUrl;
       }
       const updatedPost = await post.save();
+
       return {
         ...updatedPost._doc,
         _id: updatedPost._id.toString(),
@@ -277,7 +276,9 @@ module.exports = {
         error.code = 403;
         throw error;
       }
-      utils.clearImage(post.imageUrl);
+      if (post.imageUrl) {
+        utils.clearImage(post.imageUrl);
+      }
       await Post.deleteOne({ _id: id });
 
       const user = await User.findById(req.userId);

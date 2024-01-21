@@ -26,7 +26,7 @@ exports.Schema = buildSchema(`
     input PostInputData {
         title: String!
         content: String!
-        imageUrl: String!
+        imageUrl: String
     }
     type GetPostResponse {
         posts: [Post!]!
@@ -45,8 +45,8 @@ exports.Schema = buildSchema(`
     }
     type RootQuery {
         loginUser(email: String!, password: String!): AuthData!
-        getPosts(currentPage: String!): GetPostResponse!
-        post(id: String!): Post!
+        getPosts(currentPage: Int!): GetPostResponse!
+        post(id: ID!): Post!
         status: String
     }
     schema {
