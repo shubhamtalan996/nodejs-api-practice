@@ -41,11 +41,13 @@ exports.Schema = buildSchema(`
         createPost(postInput: PostInputData): Post!
         updatePost(id: ID!, postInput: PostInputData): Post
         deletePost(id: ID!): Boolean!
+        updateStatus(status: String!): String
     }
     type RootQuery {
         loginUser(email: String!, password: String!): AuthData!
         getPosts(currentPage: String!): GetPostResponse!
         post(id: String!): Post!
+        status: String
     }
     schema {
         query: RootQuery

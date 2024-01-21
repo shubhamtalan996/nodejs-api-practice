@@ -286,7 +286,44 @@ module.exports = {
 
       return true;
     } catch (error) {
-      return false;
+      throw error;
+    }
+  },
+  status: async function ({}, req) {
+    if (!req.isAuth) {
+      const error = new Error("Not authenticated!");
+      error.code = 401;
+      throw error;
+    }
+    try {
+      const user = await User.findById(req.userId);
+      return user?.status;
+    } catch (error) {
+      throw error;
+    }
+  },
+  updateStatus: async function ({ status }, req) {
+    if (!req.isAuth) {
+      const error = new Error("Not authenticated!");
+      error.code = 401;
+      throw error;
+    }
+    const errors = [];
+    if (validator.isEmpty(status) || !validator.isLength(status, { min: 4 })) {
+      errors.push({ message: "Status validation failed!" });
+    }
+    if (errors.length > 0) {
+      const error = new Error("Invalid input");
+      error.data = errors;
+      error.code = 422;
+      throw error;
+    }
+    try {
+      const user = await User.findById(req.userId);
+      user.status = status;
+      await user.save();
+      return user?.status || "";
+    } catch (error) {
       throw error;
     }
   },
