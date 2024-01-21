@@ -134,9 +134,6 @@ module.exports = {
     ) {
       errors.push({ message: "content validation failed!" });
     }
-    // if (!req.file) {
-    //   errors.push({ message: "No image provided!" });
-    // }
     if (errors.length > 0) {
       const error = new Error("Invalid input");
       error.data = errors;
@@ -153,7 +150,7 @@ module.exports = {
       const post = new Post({
         title,
         content,
-        imageUrl: "image",
+        imageUrl: imageUrl,
         creator: user,
       });
       const postSaveResponse = await post.save();
@@ -174,4 +171,67 @@ module.exports = {
       throw error;
     }
   },
+  post: async function ({ id }, req) {
+    if (!req.isAuth) {
+      const error = new Error("Not authenticated!");
+      error.code = 401;
+      throw error;
+    }
+    const errors = [];
+    if (validator.isEmpty(id)) {
+      errors.push({ message: "Id missing!" });
+    }
+    if (errors.length > 0) {
+      const error = new Error("Invalid input");
+      error.data = errors;
+      error.code = 422;
+      throw error;
+    }
+    try {
+      const post = await Post.findById(id).populate("creator");
+      if (!post) {
+        const error = new Error("Post not found!");
+        error.code = 404;
+        throw error;
+      }
+      return {
+        ...post._doc,
+        _id: post._id.toString(),
+        createdAt: post.createdAt.toISOString(),
+        updatedAt: post.updatedAt.toISOString(),
+      };
+    } catch (error) {
+      throw error;
+    }
+  },
+  // updatePost: async function ({ id, postInput }, req) {
+  //   if (!req.isAuth) {
+  //     const error = new Error("Not authenticated!");
+  //     error.code = 401;
+  //     throw error;
+  //   }
+  //   const { title, content, imageUrl } = postInput;
+  //   const errors = [];
+  //   if (validator.isEmpty(title) || !validator.isLength(title, { min: 4 })) {
+  //     errors.push({ message: "Title validation failed!" });
+  //   }
+  //   if (
+  //     validator.isEmpty(content) ||
+  //     !validator.isLength(content, { min: 5 })
+  //   ) {
+  //     errors.push({ message: "content validation failed!" });
+  //   }
+  //   if (errors.length > 0) {
+  //     const error = new Error("Invalid input");
+  //     error.data = errors;
+  //     error.code = 422;
+  //     throw error;
+  //   }
+  //   try {
+  //     const post = await Post.findById(id).populate('creator');
+
+  //   } catch (error) {
+
+  //   }
+  // },
 };
